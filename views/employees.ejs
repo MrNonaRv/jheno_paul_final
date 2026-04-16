@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Employee Details - Payroll System</title>
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/jquery.min.js"></script>
+<style>
+.alert { padding:12px 15px; margin-bottom:15px; border-radius:4px; }
+.alert.success { background-color:#d4edda; color:#155724; border:1px solid #c3e6cb; }
+.alert.error   { background-color:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
+.edit-highlight { background-color:#fff3cd; }
+</style>
+</head>
+<body>
+<header>
+    <div class="header-content">
+        <img src="/uploads/<%= settings.system_logo %>" alt="Logo" class="logo">
+        <h1>MUNICIPAL EMPLOYEE INFORMATION DATABASE (MEID)</h1>
+    </div>
+    <nav>
+        <a href="/">Payroll Records</a>
+        <a href="/employees" class="active">Employee Details</a>
+        <a href="/admin">Admin Settings</a>
+    </nav>
+</header>
+
+<main>
+<section class="employee-section">
+    <div class="section-header">
+        <h2><%= editMode ? 'Edit Employee' : 'Employee Details' %></h2>
+        <% if (!editMode) { %>
+            <button onclick="document.getElementById('addEmpForm').style.display='flex'" class="btn-primary">Add New Employee</button>
+        <% } else { %>
+            <a href="/employees" class="btn-primary" style="text-decoration:none;">Back to List</a>
+        <% } %>
+    </div>
+
+    <!-- Add Employee Modal -->
+    <div id="addEmpForm" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>Add New Employee</h3>
+            <form action="/api/save-employee" method="POST">
+                <div class="form-group"><label>Name</label><input type="text" name="name" required placeholder="Last Name, First Name M.I."></div>
+                <div class="form-group"><label>Position</label><input type="text" name="position" required placeholder="e.g. Admin Officer III"></div>
+                <div class="form-group"><label>Department</label><input type="text" name="department" placeholder="e.g. Administration"></div>
+                <div class="form-group"><label>Monthly Salary</label><input type="number" step="0.01" name="monthly_salary" required placeholder="0.00"></div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-save">Save Employee</button>
+                    <button type="button" onclick="document.getElementById('addEmpForm').style.display='none'" class="btn-cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Form -->
+    <% if (editMode && editEmployee) { %>
+    <div class="table-container edit-highlight">
+        <form action="/api/save-employee" method="POST">
+            <input type="hidden" name="id" value="<%= editEmployee.id %>">
+            <input type="hidden" name="employee_id" value="<%= editEmployee.employee_id %>">
+            <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" name="name" value="<%= editEmployee.name %>" required>
+                </div>
+                <div class="form-group">
+                    <label>Position</label>
+                    <input type="text" name="position" value="<%= editEmployee.position %>" required>
+                </div>
+                <div class="form-group">
+                    <label>Department</label>
+                    <input type="text" name="department" value="<%= editEmployee.department %>">
+                </div>
+                <div class="form-group">
+                    <label>Monthly Salary</label>
+                    <input type="number" step="0.01" name="monthly_salary" value="<%= editEmployee.monthly_salary %>" required>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-save">Update Employee</button>
+                <a href="/employees" class="btn-cancel" style="text-decoration:none;display:inline-block;">Cancel</a>
+            </div>
+        </form>
+    </div>
+    <% } %>
+
+    <!-- Employee List -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Name</th>
+                    <th>Position</th>
+                    <th>Department</th>
+                    <th>Monthly Salary</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% employees.forEach(function(row, index) { %>
+                <tr>
+                    <td><%= index + 1 %></td>
+                    <td><%= row.name %></td>
+                    <td><%= row.position %></td>
+                    <td><%= row.department %></td>
+                    <td><%= parseFloat(row.monthly_salary).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                    <td>
+                        <div class="action-btns">
+                            <a href="/employees?edit=<%= row.id %>" class="btn-edit">Edit</a>
+                            <button type="button" class="btn-delete" onclick="deleteEmployee(<%= row.id %>, '<%= row.name.replace(/'/g, "\\'") %>')">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+</section>
+</main>
+
+<script>
+function deleteEmployee(id, name) {
+    if (confirm('Delete employee: ' + name + '?\nThis cannot be undone.')) {
+        $.ajax({
+            url: '/api/delete-employee', type: 'POST',
+            data: { id: id }, dataType: 'json',
+            success: function(r) {
+                if (r.success) { alert('Deleted!'); location.reload(); }
+                else alert('Error: ' + r.message);
+            },
+            error: function() { alert('Error deleting employee.'); }
+        });
+    }
+}
+</script>
+</body>
+</html>

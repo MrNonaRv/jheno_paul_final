@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Payslip</title>
+
+<style>
+@page {
+    size: letter;
+    margin: 0.5in;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    padding: 10px;
+}
+
+.payslip-container {
+    max-width: 750px;
+    margin: auto;
+}
+
+.header {
+    text-align: center;
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.header img {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 60px;
+}
+
+.header h3, .header h4 {
+    margin: 2px 0;
+    font-size: 14px;
+}
+
+.header p {
+    margin: 2px 0;
+    font-size: 12px;
+}
+
+.info-section {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.info-row {
+    display: flex;
+    margin-bottom: 3px;
+}
+
+.info-label {
+    width: 110px;
+    font-weight: bold;
+}
+
+.table-col h4 {
+    border-bottom: 1px solid #000;
+    margin-bottom: 5px;
+    font-size: 13px;
+}
+
+.data-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+
+.total-row {
+    border-top: 1px solid #000;
+    margin-top: 5px;
+    padding-top: 3px;
+    font-weight: bold;
+}
+
+.net-pay-section {
+    margin-top: 15px;
+    text-align: right;
+    font-weight: bold;
+    border-top: 2px double #000;
+    padding-top: 5px;
+}
+
+.accountant-sign {
+    margin-top: 30px;
+    text-align: right;
+}
+
+.editable {
+    padding: 3px;
+}
+
+.editable:hover {
+    outline: 1px dashed #999;
+}
+
+.editable p {
+    margin: 2px 0;
+}
+
+hr {
+    margin-top: 20px;
+}
+
+.no-print {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+@media print {
+    .no-print { display: none; }
+    .editable { outline: none !important; }
+}
+</style>
+</head>
+
+<body>
+
+<%
+const gross = (row.basic_pay || 0) + (row.pera || 0) + (row.rata || 0);
+const total_deductions = (row.tax || 0) + (row.gsis || 0) + (row.philhealth || 0) + (row.pagibig || 0) + 
+                        (row.mpl_lite || 0) + (row.emergency_loan || 0) + (row.computer_loan || 0) + 
+                        (row.rural_bank_loan || 0) + (row.fcb_loan || 0) + (row.fcb_loan_2 || 0) + 
+                        (row.mpl_gsis || 0) + (row.gfal || 0) + (row.sss_premium || 0) + 
+                        (row.mpl_lite_loan || 0) + (row.policy_loan || 0);
+const net = gross - total_deductions;
+
+function num(n) {
+    return parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+%>
+
+<div class="no-print">
+    <button onclick="window.print()">Print</button>
+    <button onclick="window.close()">Close</button>
+</div>
+
+<div class="payslip-container">
+
+    <div class="header">
+        <img src="/uploads/<%= settings.system_logo %>">
+        <h3>REPUBLIC OF THE PHILIPPINES</h3>
+        <h4><%= settings.lgu_province %></h4>
+        <h3><%= settings.lgu_name %></h3>
+        <h4><%= settings.lgu_office %></h4>
+
+        <!-- Editable Title -->
+        <div contenteditable="true" class="editable">
+            <p><strong>STATEMENT OF GROSS MONTHLY INCOME AND DEDUCTIONS</strong></p>
+            <p>For the month of <%= row.month_year %></p>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <div class="info-row">
+            <span class="info-label">NAME:</span>
+            <span><%= row.name.toUpperCase() %></span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">POSITION:</span>
+            <span><%= row.position.toUpperCase() %></span>
+        </div>
+    </div>
+
+    <!-- INCOME -->
+    <div class="table-col">
+        <h4>INCOME:</h4>
+        <div class="data-row"><span>Basic Pay</span> <span>P <%= num(row.basic_pay) %></span></div>
+        <div class="data-row"><span><%= settings.field_pera %></span> <span>P <%= num(row.pera) %></span></div>
+        <div class="data-row"><span><%= settings.field_rata %></span> <span>P <%= num(row.rata) %></span></div>
+        <div class="total-row data-row"><span>GROSS MONTHLY INCOME</span> <span>P <%= num(gross) %></span></div>
+    </div>
+
+    <!-- DEDUCTIONS -->
+    <div class="table-col">
+        <h4>DEDUCTIONS:</h4>
+        <div class="data-row"><span><%= settings.field_tax %></span> <span>P <%= num(row.tax) %></span></div>
+        <div class="data-row"><span><%= settings.field_gsis %></span> <span>P <%= num(row.gsis) %></span></div>
+        <div class="data-row"><span><%= settings.field_philhealth %></span> <span>P <%= num(row.philhealth) %></span></div>
+        <div class="data-row"><span><%= settings.field_pagibig %></span> <span>P <%= num(row.pagibig) %></span></div>
+        <div class="data-row"><span><%= settings.field_mpl_lite %></span> <span>P <%= num(row.mpl_lite) %></span></div>
+        <div class="data-row"><span><%= settings.field_emergency_loan %></span> <span>P <%= num(row.emergency_loan) %></span></div>
+        <div class="data-row"><span><%= settings.field_computer_loan %></span> <span>P <%= num(row.computer_loan) %></span></div>
+        <div class="data-row"><span><%= settings.field_rural_bank_loan %></span> <span>P <%= num(row.rural_bank_loan) %></span></div>
+        <div class="data-row"><span><%= settings.field_fcb_loan %></span> <span>P <%= num(row.fcb_loan) %></span></div>
+        <div class="data-row"><span><%= settings.field_fcb_loan_2 || 'FCB Loan 2' %></span> <span>P <%= num(row.fcb_loan_2) %></span></div>
+        <div class="data-row"><span><%= settings.field_mpl_gsis %></span> <span>P <%= num(row.mpl_gsis) %></span></div>
+        <div class="data-row"><span>GFAL</span> <span>P <%= num(row.gfal) %></span></div>
+        <div class="data-row"><span>SSS Premium</span> <span>P <%= num(row.sss_premium) %></span></div>
+        <div class="data-row"><span>MPL Lite Loan</span> <span>P <%= num(row.mpl_lite_loan) %></span></div>
+        <div class="data-row"><span>Policy Loan</span> <span>P <%= num(row.policy_loan) %></span></div>
+        <div class="total-row data-row"><span>TOTAL DEDUCTIONS</span> <span>P <%= num(total_deductions) %></span></div>
+    </div>
+
+    <!-- NET PAY -->
+    <div class="net-pay-section">
+        NET PAY: P <%= num(net) %>
+    </div>
+
+    <!-- Editable Certification -->
+    <% 
+    const today = new Date();
+    const day = today.getDate();
+    const month = today.toLocaleString('default', { month: 'long' });
+    const year = today.getFullYear();
+    const suffix = (day) => {
+        if (day > 3 && day < 21) return 'th';
+        switch (day % 10) {
+            case 1:  return "st";
+            case 2:  return "nd";
+            case 3:  return "rd";
+            default: return "th";
+        }
+    };
+    %>
+    <div contenteditable="true" class="editable" style="font-size:0.8rem; margin-top:15px;">
+        <p>I certify under the pain of perjury that the above-mentioned information is true and correct.</p>
+        <p>Issued this <%= day %><%= suffix(day) %> day of <%= month %>, <%= year %>.</p>
+    </div>
+
+    <!-- Accountant -->
+    <div class="accountant-sign">
+        <strong>MA. ANGEL ADORA C. LAUNIO</strong><br>
+        Municipal Accountant
+    </div>
+
+    <!-- Footer -->
+    <hr>
+    <div style="text-align:center; font-size:0.9rem;">
+        Rizal Street Barangay Poblacion Proper Mambusao, Capiz<br>
+        lguacctg12@gmail.com | (036) 6205-676
+    </div>
+
+</div>
+
+</body>
+</html>

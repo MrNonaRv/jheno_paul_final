@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LGU Payroll Management System</title>
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/jquery.min.js"></script>
+
+<style id="printOrientationStyle">
+    @page { size: letter landscape; margin: 0.2in; }
+</style>
+
+<style>
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* Tabbed Interface Styles */
+.sheet-tabs { display: flex; gap: 4px; margin-bottom: -1px; position: relative; z-index: 10; padding-left: 22px; }
+.sheet-tab { padding: 8px 16px; background: #f4f6f9; border: 1px solid #dce3ec; border-bottom: none; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: #666; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+.sheet-tab.active { background: #fff; border-bottom: 1px solid #fff; color: #3498db; box-shadow: 0 -2px 4px rgba(0,0,0,0.05); }
+.sheet-tab:hover:not(.active) { background: #e9ecef; }
+.edit-sheet-name { font-size: 10px; opacity: 0.5; cursor: pointer; }
+.edit-sheet-name:hover { opacity: 1; color: #3498db; }
+.sheet-content { display: none; }
+.sheet-content.active { display: block; }
+
+/* Flat header style adjustments */
+#payrollTable th { white-space: nowrap; }
+
+@media print {
+    .sheet-tabs { display: none !important; }
+    .sheet-content { display: block !important; }
+    .sheet-content:not(.active) { display: none !important; }
+}
+
+.payroll-section { display: flex; align-items: flex-start; gap: 0; }
+.search-sidebar { width: 210px; min-width: 190px; flex-shrink: 0; background: #f4f6f9; border-right: 2px solid #dce3ec; padding: 20px 14px 30px; position: sticky; top: 0; min-height: calc(100vh - 100px); box-sizing: border-box; }
+.sidebar-logo { text-align: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #dce3ec; }
+.sidebar-logo img { width: 52px; height: 52px; object-fit: contain; }
+.sidebar-title { font-size: 0.72rem; font-weight: 700; color: #3498db; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px 0; padding-bottom: 6px; border-bottom: 2px solid #3498db; }
+.sidebar-group { margin-bottom: 14px; }
+.sidebar-group label { display: block; font-size: 0.75rem; font-weight: 600; color: #555; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+.sidebar-input { width: 100%; padding: 7px 9px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; box-sizing: border-box; background: white; }
+.sidebar-input:focus { border-color: #3498db; outline: none; }
+.sidebar-btn-search { width: 100%; padding: 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 6px; font-size: 0.85rem; font-weight: 600; }
+.sidebar-btn-search:hover { background: #2980b9; }
+.sidebar-select { width: 100%; padding: 7px 9px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; box-sizing: border-box; background: white; cursor: pointer; }
+.sidebar-select:focus { border-color: #3498db; outline: none; }
+.sidebar-divider { border: none; border-top: 1px solid #dce3ec; margin: 16px 0; }
+.sidebar-btn-add { width: 100%; padding: 9px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.3px; }
+.sidebar-btn-add:hover { background: #1e8449; }
+.sidebar-btn-export { width: 100%; padding: 9px; background: #2980b9; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600; margin-top: 8px; display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
+.sidebar-btn-export:hover { background: #1f618d; color: white; }
+.sidebar-btn-import { width: 100%; padding: 9px; background: #8e44ad; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600; margin-top: 6px; }
+.sidebar-btn-import:hover { background: #6c3483; }
+.payroll-row.duplicate-highlight { background-color: #fff3cd !important; border: 2px solid #ffc107 !important; }
+.duplicate-badge { background: #ffc107; color: #856404; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-left: 5px; }
+</style>
+</head>
+<body>
+
+<% 
+function fmt_val(val) {
+    if (val === null || val === undefined || val === '' || parseFloat(val) == 0) return '';
+    return parseFloat(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+%>
+
+<header class="no-print">
+    <div class="header-content">
+        <img src="/uploads/<%= settings.system_logo %>" alt="Logo" class="logo">
+        <h1>MUNICIPAL EMPLOYEE INFORMATION DATABASE (MEID)</h1>
+    </div>
+    <nav>
+        <a href="/" class="active">Payroll Records</a>
+        <a href="/employees">Employee Details</a>
+        <a href="/admin">Admin Settings</a>
+    </nav>
+</header>
+
+<main>
+<div id="printArea">
+<section class="payroll-section">
+
+    <aside class="search-sidebar no-print">
+        <div class="sidebar-logo">
+            <img src="/uploads/<%= settings.system_logo %>" alt="Logo">
+        </div>
+        <p class="sidebar-title">&#128269; Search &amp; Filter</p>
+        <div class="sidebar-group">
+            <label>Keyword</label>
+            <input type="text" id="searchInput" placeholder="Name or Position…" class="sidebar-input">
+            <button id="searchBtn" class="sidebar-btn-search">Search</button>
+        </div>
+        <div class="sidebar-group">
+            <label>Department</label>
+            <select id="filterDepartment" class="sidebar-select">
+                <option value="">All Departments</option>
+                <% departments.forEach(function(dept) { %>
+                    <option value="<%= dept %>"><%= dept %></option>
+                <% }); %>
+            </select>
+        </div>
+        <div class="sidebar-group">
+            <label>Period / Month</label>
+            <select id="filterMonth" class="sidebar-select">
+                <option value="">All Periods</option>
+                <% months.forEach(function(m) { %>
+                    <% 
+                        const [year, month] = m.split('-');
+                        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                        const label = monthNames[parseInt(month) - 1] + " " + year;
+                    %>
+                    <option value="<%= m %>"><%= label %></option>
+                <% }); %>
+            </select>
+        </div>
+        <hr class="sidebar-divider">
+        <button id="addRecordBtn" class="sidebar-btn-add">&#43; Add New Record</button>
+        <hr class="sidebar-divider">
+        <p class="sidebar-title" style="margin-top:0;">&#128190; Data Backup</p>
+        <a href="#" onclick="exportExcel(); return false;" class="sidebar-btn-export" style="background:#27ae60;">&#128181; Export to Excel</a>
+        <a href="/api/export-data" class="sidebar-btn-export" style="margin-top:6px;">&#11118; Export to SQL</a>
+        <button class="sidebar-btn-import" id="openImportBtn">&#11014; Import / Load Data</button>
+        <p class="sidebar-hint">&#9998; Click any cell in the table to edit it — changes save automatically.</p>
+    </aside>
+
+    <div class="payroll-main">
+        <div class="section-header-top no-print">
+            <h2>Payroll Records</h2>
+        </div>
+
+        <div class="sheet-tabs no-print">
+            <div class="sheet-tab active" data-target="sheet1">
+                <span class="sheet-name" data-id="sheet1">Part 1 - All Periods</span>
+                <span class="edit-sheet-name" onclick="renameSheet('sheet1')">&#9998;</span>
+            </div>
+            <div class="sheet-tab" data-target="sheet2">
+                <span class="sheet-name" data-id="sheet2">Part 2 - All Periods</span>
+                <span class="edit-sheet-name" onclick="renameSheet('sheet2')">&#9998;</span>
+            </div>
+        </div>
+
+        <!-- Sheet 1 (1-15) -->
+        <div id="sheet1" class="sheet-content active">
+            <div class="print-only-header editable-header" contenteditable="true" style="text-align:center;margin-bottom:4px;position:relative;">
+                <h2 style="margin:2px 0;font-weight:bold;font-size:12pt;letter-spacing:1px;">GENERAL PAYROLL</h2>
+                <p style="margin:1px 0;font-size:8pt;font-weight:bold;">LOCAL GOVERNMENT UNIT OF MAMBUSAO</p>
+                <p style="margin:2px;font-weight:bold;text-decoration:underline;"><span class="dynamic-period-display">All Periods</span></p>
+            </div>
+            <div class="table-container">
+                <table id="payrollTable1" class="payroll-table-styled">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Name</th>
+                            <th>Position</th>
+                            <th>Department</th>
+                            <th>Monthly Salary</th>
+                            <th>Amount Earned</th>
+                            <th><%= settings.field_pera %></th>
+                            <th><%= settings.field_rata %></th>
+                            <th><%= settings.field_tax %></th>
+                            <th><%= settings.field_philhealth %></th>
+                            <th><%= settings.field_gsis %></th>
+                            <th><%= settings.field_pagibig %></th>
+                            <th><%= settings.field_mpl_lite %></th>
+                            <th><%= settings.field_emergency_loan %></th>
+                            <th>MPL Pi</th>
+                            <th><%= settings.field_computer_loan %></th>
+                            <th><%= settings.field_rural_bank_loan %></th>
+                            <th><%= settings.field_fcb_loan %></th>
+                            <th><%= settings.field_mpl_gsis %></th>
+                            <th>No.</th>
+                            <th>Amount Received</th>
+                            <th class="no-print">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% let total_net = 0; %>
+                        <% payroll_rows.forEach(function(row, index) { %>
+                            <% 
+                            let gross = (row.basic_pay || 0) + (row.pera || 0) + (row.rata || 0);
+                            let deds = (row.tax || 0) + (row.philhealth || 0) + (row.gsis || 0) + (row.pagibig || 0) + (row.mpl_lite || 0) + (row.emergency_loan || 0) + (row.mpl_gsis || 0) + (row.computer_loan || 0) + (row.rural_bank_loan || 0) + (row.fcb_loan || 0);
+                            let net = gross - deds;
+                            total_net += net;
+                            %>
+                            <tr class="payroll-row" data-name="<%= row.name.toLowerCase() %>" data-position="<%= row.position.toLowerCase() %>" data-department="<%= row.department %>" data-month="<%= row.month_year_val || '' %>" data-day="<%= row.start_day %>">
+                                <td class="row-no"><%= index + 1 %></td>
+                                <td class="editable-cell ec-text" data-type="employee" data-field="name" data-id="<%= row.emp_db_id %>"><%= row.name %></td>
+                                <td class="editable-cell ec-text" data-type="employee" data-field="position" data-id="<%= row.emp_db_id %>"><%= row.position %></td>
+                                <td class="editable-cell ec-text" data-type="employee" data-field="department" data-id="<%= row.emp_db_id %>"><%= row.department %></td>
+                                <td class="editable-cell ec-num" data-type="employee" data-field="monthly_salary" data-id="<%= row.emp_db_id %>"><%= fmt_val(row.monthly_salary) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="basic_pay" data-id="<%= row.id %>"><%= fmt_val(row.basic_pay) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="pera" data-id="<%= row.id %>"><%= fmt_val(row.pera) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="rata" data-id="<%= row.id %>"><%= fmt_val(row.rata) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="tax" data-id="<%= row.id %>"><%= fmt_val(row.tax) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="philhealth" data-id="<%= row.id %>"><%= fmt_val(row.philhealth) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="gsis" data-id="<%= row.id %>"><%= fmt_val(row.gsis) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="pagibig" data-id="<%= row.id %>"><%= fmt_val(row.pagibig) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="mpl_lite" data-id="<%= row.id %>"><%= fmt_val(row.mpl_lite) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="emergency_loan" data-id="<%= row.id %>"><%= fmt_val(row.emergency_loan) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="mpl_gsis" data-id="<%= row.id %>"><%= fmt_val(row.mpl_gsis) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="computer_loan" data-id="<%= row.id %>"><%= fmt_val(row.computer_loan) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="rural_bank_loan" data-id="<%= row.id %>"><%= fmt_val(row.rural_bank_loan) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="fcb_loan" data-id="<%= row.id %>"><%= fmt_val(row.fcb_loan) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="mpl_gsis" data-id="<%= row.id %>"><%= fmt_val(row.mpl_gsis) %></td>
+                                <td class="row-no"><%= index + 1 %></td>
+                                <td class="font-bold cell-net"><%= net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                                <td class="no-print">
+                                    <div class="action-btns">
+                                        <a href="/print_payslip?id=<%= row.id %>" target="_blank" class="btn-print">Print</a>
+                                        <button class="btn-edit" onclick="editRecord(<%= row.id %>)">Edit</button>
+                                        <button class="btn-delete" onclick="deleteRecord(<%= row.id %>)">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="4" style="text-align:right; font-weight:bold;">TOTAL:</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td></td>
+                            <td class="total-cell">0.00</td>
+                            <td class="no-print"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Sheet 2 (16-31) -->
+        <div id="sheet2" class="sheet-content">
+            <div class="print-only-header editable-header" contenteditable="true" style="text-align:center;margin-bottom:4px;position:relative;">
+                <h2 style="margin:2px 0;font-weight:bold;font-size:12pt;letter-spacing:1px;">GENERAL PAYROLL</h2>
+                <p style="margin:1px 0;font-size:8pt;font-weight:bold;">LOCAL GOVERNMENT UNIT OF MAMBUSAO</p>
+                <p style="margin:2px;font-weight:bold;text-decoration:underline;"><span class="dynamic-period-display">All Periods</span></p>
+            </div>
+            <div class="table-container">
+                <table id="payrollTable2" class="payroll-table-styled">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Name</th>
+                            <th>Position</th>
+                            <th>Department</th>
+                            <th>Monthly Salary</th>
+                            <th>Amount Earned</th>
+                            <th><%= settings.field_clothing %></th>
+                            <th>GFAL</th>
+                            <th>SSS Premium</th>
+                            <th>MPL Lite Loan</th>
+                            <th><%= settings.field_mpl_gsis %></th>
+                            <th><%= settings.field_fcb_loan %></th>
+                            <th>Policy Loan</th>
+                            <th><%= settings.field_computer_loan %></th>
+                            <th><%= settings.field_fcb_loan_2 || 'FCB Loan 2' %></th>
+                            <th><%= settings.field_rural_bank_loan %></th>
+                            <th><%= settings.field_emergency_loan %></th>
+                            <th>No.</th>
+                            <th>Amount Received</th>
+                            <th class="no-print">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% payroll_rows.forEach(function(row, index) { %>
+                            <% 
+                            let gross2 = (row.basic_pay || 0) + (row.clothing_allowance || 0);
+                            let deds2 = (row.gfal || 0) + (row.sss_premium || 0) + (row.mpl_lite_loan || 0) + (row.mpl_gsis || 0) + (row.fcb_loan || 0) + (row.fcb_loan_2 || 0) + (row.policy_loan || 0) + (row.computer_loan || 0) + (row.rural_bank_loan || 0) + (row.emergency_loan || 0);
+                            let net2 = gross2 - deds2;
+                            %>
+                            <tr class="payroll-row" data-name="<%= row.name.toLowerCase() %>" data-position="<%= row.position.toLowerCase() %>" data-department="<%= row.department %>" data-month="<%= row.month_year_val || '' %>" data-day="<%= row.start_day %>">
+                                <td class="row-no"><%= index + 1 %></td>
+                                <td class="editable-cell ec-text" data-type="employee" data-field="name" data-id="<%= row.emp_db_id %>"><%= row.name %></td>
+                                <td class="editable-cell ec-text" data-type="employee" data-field="position" data-id="<%= row.emp_db_id %>"><%= row.position %></td>
+                                <td class="editable-cell ec-text" data-type="employee" data-field="department" data-id="<%= row.emp_db_id %>"><%= row.department %></td>
+                                <td class="editable-cell ec-num" data-type="employee" data-field="monthly_salary" data-id="<%= row.emp_db_id %>"><%= fmt_val(row.monthly_salary) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="basic_pay" data-id="<%= row.id %>"><%= fmt_val(row.basic_pay) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="clothing_allowance" data-id="<%= row.id %>"><%= fmt_val(row.clothing_allowance) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="gfal" data-id="<%= row.id %>"><%= fmt_val(row.gfal) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="sss_premium" data-id="<%= row.id %>"><%= fmt_val(row.sss_premium) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="mpl_lite_loan" data-id="<%= row.id %>"><%= fmt_val(row.mpl_lite_loan) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="mpl_gsis" data-id="<%= row.id %>"><%= fmt_val(row.mpl_gsis) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="fcb_loan" data-id="<%= row.id %>"><%= fmt_val(row.fcb_loan) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="policy_loan" data-id="<%= row.id %>"><%= fmt_val(row.policy_loan) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="computer_loan" data-id="<%= row.id %>"><%= fmt_val(row.computer_loan) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="fcb_loan_2" data-id="<%= row.id %>"><%= fmt_val(row.fcb_loan_2) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="rural_bank_loan" data-id="<%= row.id %>"><%= fmt_val(row.rural_bank_loan) %></td>
+                                <td class="editable-cell ec-num" data-type="payroll" data-field="emergency_loan" data-id="<%= row.id %>"><%= fmt_val(row.emergency_loan) %></td>
+                                <td class="row-no"><%= index + 1 %></td>
+                                <td class="font-bold cell-net"><%= net2.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                                <td class="no-print">
+                                    <div class="action-btns">
+                                        <a href="/print_payslip?id=<%= row.id %>" target="_blank" class="btn-print">Print</a>
+                                        <button class="btn-edit" onclick="editRecord(<%= row.id %>)">Edit</button>
+                                        <button class="btn-delete" onclick="deleteRecord(<%= row.id %>)">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="4" style="text-align:right; font-weight:bold;">TOTAL:</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td class="total-cell">0.00</td>
+                            <td></td>
+                            <td class="total-cell">0.00</td>
+                            <td class="no-print"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="print-footer signatories-section" contenteditable="true"
+             style="margin-top:4px;display:grid;grid-template-columns:1fr 1fr;border:1px solid black;width:99%;box-sizing:border-box;font-size:0.85em;">
+            <div style="padding:3px 8px;border-right:1px solid black;border-bottom:1px solid black;">
+                <p style="font-size:0.65em;margin-bottom:1px;">CERTIFIED &amp; RECOMMENDED BY: Services have been duly rendered as stated</p>
+                <div style="text-align:center;margin-top:8px;">
+                    <p style="font-weight:bold;margin-bottom:0;text-decoration:underline;">DESAM D. MONTORIO</p>
+                    <p style="margin-top:0;font-size:0.75em;">Name &amp; Signature of Supervisor</p>
+                </div>
+            </div>
+            <div style="padding:3px 8px;border-bottom:1px solid black;">
+                <p style="font-size:0.65em;text-align:right;margin-bottom:1px;">APPROVED FOR PAYMENT:</p>
+                <div style="text-align:center;margin-top:8px;">
+                    <p style="font-weight:bold;margin-bottom:0;text-decoration:underline;">LEODEGARIO A. LABAO JR.</p>
+                    <p style="margin-top:0;font-size:0.75em;">Name &amp; Signature of the Chief of Office</p>
+                </div>
+            </div>
+            <div style="padding:3px 8px;border-right:1px solid black;">
+                <p style="font-size:0.7em;margin-bottom:1px;">CERTIFIED: Funds available in the amount of P&nbsp;<span id="fundsAmount"><%= total_net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></span></p>
+                <div style="text-align:center;margin-top:8px;">
+                    <p style="font-weight:bold;margin-bottom:0;text-decoration:underline;">NILO V. SALOMEO-M/T</p>
+                    <p style="margin-top:0;font-size:0.75em;">Name &amp; Signature of Treasurer</p>
+                </div>
+            </div>
+            <div style="padding:3px 8px;display:flex;flex-direction:column;justify-content:flex-end;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px;">
+                    <div style="text-align:center;flex:1;">
+                        <p style="font-weight:bold;margin-bottom:0;text-decoration:underline;">NILO V. SALOMEO</p>
+                        <p style="margin-top:0;font-size:0.75em;">Disbursing Officer</p>
+                    </div>
+                    <div style="width:100px;border-top:1px solid black;text-align:center;margin-left:10px;">
+                        <p style="font-size:0.75em;margin-top:0;">Date</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="print-button-section no-print">
+            <span class="orientation-label">Orientation:</span>
+            <div class="orientation-toggle">
+                <button class="btn-orientation" id="btnPortrait">&#9647; Portrait</button>
+                <button class="btn-orientation active" id="btnLandscape">&#9646; Landscape</button>
+            </div>
+            <button id="printTableBtn" class="btn-print-large">&#128438; Print Entire Table</button>
+        </div>
+
+    </div>
+</section>
+</div>
+</main>
+
+<div id="addRecordForm" class="modal no-print" style="display:none;">
+    <div class="modal-content">
+        <h3 id="modalTitle">Add Payroll Record</h3>
+        <form id="payrollForm">
+            <input type="hidden" name="payroll_id" id="payroll_id">
+            <div class="form-group">
+                <label>Employee</label>
+                <select name="employee_id" id="employee_select" required>
+                    <option value="">Select Employee</option>
+                    <% employees.forEach(function(emp) { %>
+                        <option value="<%= emp.id %>" data-salary="<%= emp.monthly_salary %>">
+                            <%= emp.name %>
+                        </option>
+                    <% }); %>
+                </select>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Period Start Date</label>
+                    <input type="date" name="period_start" id="period_start" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div class="form-group">
+                    <label>Period End Date</label>
+                    <input type="date" name="period_end" id="period_end" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label>Monthly Salary</label><input type="number" step="0.01" id="monthly_salary" readonly></div>
+                <div class="form-group"><label>Amount Earned</label><input type="number" step="0.01" name="basic_pay" id="amount_earned" required></div>
+                <div class="form-group"><label>PERA</label><input type="number" step="0.01" name="pera" id="pera" value="2000.00"></div>
+                <div class="form-group"><label>RATA</label><input type="number" step="0.01" name="rata" id="rata" value="0"></div>
+            </div>
+            <div class="form-grid" style="grid-template-columns: repeat(4, 1fr); margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
+                <div class="form-group"><label>Tax</label><input type="number" step="0.01" name="tax" id="tax" value="0"></div>
+                <div class="form-group"><label>GSIS</label><input type="number" step="0.01" name="gsis" id="gsis" value="0"></div>
+                <div class="form-group"><label>PhilHealth</label><input type="number" step="0.01" name="philhealth" id="philhealth" value="0"></div>
+                <div class="form-group"><label>Pag-IBIG</label><input type="number" step="0.01" name="pagibig" id="pagibig" value="0"></div>
+                <div class="form-group"><label>MPL Lite</label><input type="number" step="0.01" name="mpl_lite" id="mpl_lite" value="0"></div>
+                <div class="form-group"><label>Emergency Loan</label><input type="number" step="0.01" name="emergency_loan" id="emergency_loan" value="0"></div>
+                <div class="form-group"><label>Computer Loan</label><input type="number" step="0.01" name="computer_loan" id="computer_loan" value="0"></div>
+                <div class="form-group"><label>Rural Bank Loan</label><input type="number" step="0.01" name="rural_bank_loan" id="rural_bank_loan" value="0"></div>
+                <div class="form-group"><label>FCB Loan 1</label><input type="number" step="0.01" name="fcb_loan" id="fcb_loan" value="0"></div>
+                <div class="form-group"><label>FCB Loan 2</label><input type="number" step="0.01" name="fcb_loan_2" id="fcb_loan_2" value="0"></div>
+                <div class="form-group"><label>MPL GSIS</label><input type="number" step="0.01" name="mpl_gsis" id="mpl_gsis" value="0"></div>
+                <div class="form-group"><label>GFAL</label><input type="number" step="0.01" name="gfal" id="gfal" value="0"></div>
+                <div class="form-group"><label>SSS Premium</label><input type="number" step="0.01" name="sss_premium" id="sss_premium" value="0"></div>
+                <div class="form-group"><label>MPL Lite Loan</label><input type="number" step="0.01" name="mpl_lite_loan" id="mpl_lite_loan" value="0"></div>
+                <div class="form-group"><label>Policy Loan</label><input type="number" step="0.01" name="policy_loan" id="policy_loan" value="0"></div>
+            </div>
+            <div class="form-actions" style="margin-top:16px;">
+                <button type="submit" class="btn-save">Save Record</button>
+                <button type="button" id="cancelBtn" class="btn-cancel">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="importModal" class="no-print" style="display:none;">
+    <div class="import-box">
+        <h3>&#11014; Import / Load Data</h3>
+        <p style="font-size:0.78rem;color:#555;margin-bottom:10px;text-align:center;">Accepts <strong>.sql</strong> backups or <strong>.xlsx/.xls</strong> files exported from this system.</p>
+        
+        <div id="importPeriodFields" style="margin-bottom: 15px; text-align: left; display: none;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label style="display:block; font-size: 0.8rem; margin-bottom: 5px;">Month</label>
+                    <select id="import_month" class="sidebar-select">
+                        <% const monthsList = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; %>
+                        <% monthsList.forEach((m, i) => { %>
+                            <option value="<%= String(i + 1).padStart(2, '0') %>" <%= (new Date().getMonth() === i) ? 'selected' : '' %>><%= m %></option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display:block; font-size: 0.8rem; margin-bottom: 5px;">Year</label>
+                    <select id="import_year" class="sidebar-select">
+                        <% const currentYear = new Date().getFullYear(); %>
+                        <% for(let y = currentYear - 2; y <= currentYear + 5; y++) { %>
+                            <option value="<%= y %>" <%= (y === currentYear) ? 'selected' : '' %>><%= y %></option>
+                        <% } %>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <label style="display:block; font-size: 0.8rem; margin-bottom: 5px;">Period Part</label>
+                <select id="import_part" class="sidebar-select">
+                    <option value="1">Part 1 (1-15)</option>
+                    <option value="2">Part 2 (16-End)</option>
+                </select>
+            </div>
+        </div>
+
+        <input type="file" id="importFileInput" accept=".sql,.xlsx,.xls" style="display:none;">
+        <label for="importFileInput" class="import-drop" id="importDropZone">
+            <span>&#128190; Choose .sql or .xlsx file</span>
+        </label>
+        <div class="import-actions">
+            <button class="btn-cancel-import" id="cancelImportBtn">Cancel</button>
+            <button class="btn-do-import" id="doImportBtn" disabled>Import Data</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/script.js"></script>
+<script>
+function renameSheet(sheet) {
+    const currentName = $(`.sheet-name[data-id="${sheet}"]`).text();
+    const newName = prompt("Enter new name for " + sheet + ":", currentName);
+    if (newName && newName !== currentName) {
+        $.post('/api/update-sheet-name', { sheet: sheet, name: newName }, function(r) {
+            if (r.success) {
+                $(`.sheet-name[data-id="${sheet}"]`).text(newName);
+            } else {
+                alert("Failed to rename sheet: " + r.message);
+            }
+        }, 'json');
+    }
+}
+
+$(document).ready(function() {
+    $('.sheet-tab').click(function() {
+        $('.sheet-tab').removeClass('active');
+        $(this).addClass('active');
+        $('.sheet-content').removeClass('active');
+        $('#' + $(this).data('target')).addClass('active');
+    });
+});
+</script>
+</body>
+</html>

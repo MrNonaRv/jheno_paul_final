@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Settings - Payroll System</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="/uploads/<%= settings.system_logo %>" alt="Logo" class="logo">
+            <h1>MUNICIPAL EMPLOYEE INFORMATION DATABASE (MEID)</h1>
+        </div>
+        <nav>
+            <a href="/">Payroll Records</a>
+            <a href="/employees">Employee Details</a>
+            <a href="/admin" class="active">Admin Settings</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="admin-section">
+            <h2>System Settings</h2>
+            <% if (message) { %>
+                <div class="alert success" style="padding:12px; background:#d4edda; color:#155724; border:1px solid #c3e6cb; margin-bottom:15px; border-radius:4px;">
+                    <%= message %>
+                </div>
+            <% } %>
+            
+            <div class="table-container">
+                <form action="/admin/update" method="POST" enctype="multipart/form-data">
+                    <h3>General Information</h3>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label>LGU Name</label>
+                            <input type="text" name="lgu_name" value="<%= settings.lgu_name %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>Province</label>
+                            <input type="text" name="lgu_province" value="<%= settings.lgu_province %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>Office Name</label>
+                            <input type="text" name="lgu_office" value="<%= settings.lgu_office %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>System Logo</label>
+                            <input type="file" name="logo" accept="image/*">
+                        </div>
+                    </div>
+
+                    <h3>Table Field Names (Earnings)</h3>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label>PERA Field Name</label>
+                            <input type="text" name="field_pera" value="<%= settings.field_pera %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>RATA Field Name</label>
+                            <input type="text" name="field_rata" value="<%= settings.field_rata %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>Clothing Field Name</label>
+                            <input type="text" name="field_clothing" value="<%= settings.field_clothing %>" required style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <h3 style="display: flex; align-items: center; gap: 10px;">
+                        Table Field Names (Deductions)
+                        <span style="height: 20px; width: 2px; background: #3498db; display: inline-block;"></span>
+                    </h3>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label>Tax Field Name</label>
+                            <input type="text" name="field_tax" value="<%= settings.field_tax %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>PhilHealth Field Name</label>
+                            <input type="text" name="field_philhealth" value="<%= settings.field_philhealth %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>GSIS/LR Field Name</label>
+                            <input type="text" name="field_gsis" value="<%= settings.field_gsis %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>Pag-IBIG Field Name</label>
+                            <input type="text" name="field_pagibig" value="<%= settings.field_pagibig %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>MPL Lite Field Name</label>
+                            <input type="text" name="field_mpl_lite" value="<%= settings.field_mpl_lite %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>Emergency Loan Field Name</label>
+                            <input type="text" name="field_emergency_loan" value="<%= settings.field_emergency_loan %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>MPL Loan Field Name</label>
+                            <input type="text" name="field_mpl_gsis" value="<%= settings.field_mpl_gsis %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>Computer Loan Field Name</label>
+                            <input type="text" name="field_computer_loan" value="<%= settings.field_computer_loan %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>Rural Bank Field Name</label>
+                            <input type="text" name="field_rural_bank_loan" value="<%= settings.field_rural_bank_loan %>" required style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label>FCB Loan Field Name</label>
+                            <input type="text" name="field_fcb_loan" value="<%= settings.field_fcb_loan %>" required style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-save">Update Settings</button>
+                </form>
+            </div>
+
+            <div class="table-container" style="margin-top: 30px;">
+                <h3>Department Management</h3>
+                <div style="display: flex; gap: 20px; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                            <thead>
+                                <tr style="background: #f4f6f9; border-bottom: 2px solid #dce3ec;">
+                                    <th style="padding: 10px; text-align: left;">Department Name</th>
+                                    <th style="padding: 10px; text-align: right; width: 80px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if(departments && departments.length) { %>
+                                    <% departments.forEach(d => { %>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 10px;"><%= d.name %></td>
+                                            <td style="padding: 10px; text-align: right;">
+                                                <form action="/api/delete-department" method="POST" onsubmit="return confirm('Delete this department? Employees linked to it will lose their department association.');" style="display:inline;">
+                                                    <input type="hidden" name="id" value="<%= d.id %>">
+                                                    <button type="submit" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                <% } else { %>
+                                    <tr><td colspan="2" style="padding: 10px; text-align:center; color:#888;">No departments configured.</td></tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="flex: 1; background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 4px;">
+                        <h4>Add New Department</h4>
+                        <form action="/api/add-department" method="POST" style="margin-top: 10px;">
+                            <input type="text" name="name" placeholder="Department Name..." required style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing:border-box;">
+                            <button type="submit" class="btn-save" style="width: 100%;">Create Department</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 30px; border-top: 2px solid #f39c12; padding-top: 20px;">
+                <h3 style="color: #e67e22;">Duplicate Management</h3>
+                <p style="margin-bottom: 15px; color: #7f8c8d;">Scan the database for duplicate payroll records (same employee, same month, same period part).</p>
+                
+                <div id="duplicateResults" style="margin-bottom: 20px;">
+                    <button type="button" onclick="scanDuplicates()" class="btn-save" style="background-color: #f39c12; border-color: #e67e22;">Scan for Duplicates</button>
+                </div>
+
+                <div id="duplicateTable" style="display: none;">
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                        <thead>
+                            <tr style="background: #f4f6f9; border-bottom: 2px solid #dce3ec;">
+                                <th style="padding: 10px; text-align: left;">Employee Name</th>
+                                <th style="padding: 10px; text-align: left;">Period</th>
+                                <th style="padding: 10px; text-align: center;">Count</th>
+                                <th style="padding: 10px; text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="duplicateBody"></tbody>
+                    </table>
+                    <button type="button" onclick="deleteAllDuplicates()" class="btn-save" style="background-color: #c0392b; border-color: #962d22;">Delete All Duplicates</button>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 30px; border-top: 2px solid #e74c3c; padding-top: 20px;">
+                <h3 style="color: #c0392b;">Danger Zone</h3>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1; border-right: 1px solid #eee; padding-right: 20px;">
+                        <p style="margin-bottom: 15px; color: #7f8c8d;">This action will permanently delete all payroll records from the database. Employee information will be kept intact.</p>
+                        <form action="/admin/clear-payroll" method="POST" onsubmit="return confirm('Are you sure you want to delete ALL payroll records? THIS ACTION CANNOT BE UNDONE.');">
+                            <button type="submit" class="btn-save" style="background-color: #e74c3c; border-color: #c0392b; width: 100%;">Clear All Payroll Data</button>
+                        </form>
+                    </div>
+                    <div style="flex: 1;">
+                        <p style="margin-bottom: 15px; color: #7f8c8d;">This action will permanently delete ALL data including employees, departments, and payroll records.</p>
+                        <form action="/admin/clear-all" method="POST" onsubmit="return confirm('CRITICAL WARNING: This will delete ALL employees, departments, and payroll records. Are you absolutely sure?');">
+                            <button type="submit" class="btn-save" style="background-color: #c0392b; border-color: #962d22; width: 100%;">Clear Everything (Reset System)</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function scanDuplicates() {
+            $.get('/api/admin/scan-duplicates', function(r) {
+                if (r.success) {
+                    const body = $('#duplicateBody');
+                    body.empty();
+                    if (r.data.length === 0) {
+                        alert('No duplicates found!');
+                        $('#duplicateTable').hide();
+                        return;
+                    }
+                    r.data.forEach(d => {
+                        body.append(`
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 10px;">${d.name}</td>
+                                <td style="padding: 10px;">${d.month_year} (Part ${d.part})</td>
+                                <td style="padding: 10px; text-align: center;">${d.count}</td>
+                                <td style="padding: 10px; text-align: right;">
+                                    <button onclick="deleteDuplicateGroup('${d.employee_id}', '${d.month_year}', ${d.part})" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;">Clear Group</button>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                    $('#duplicateTable').show();
+                } else {
+                    alert('Error: ' + r.message);
+                }
+            });
+        }
+
+        function deleteDuplicateGroup(empId, monthYear, part) {
+            if (!confirm('This will delete all duplicate records for this employee in this period, keeping only the most recent one. Continue?')) return;
+            $.post('/api/admin/delete-duplicate-group', { empId, monthYear, part }, function(r) {
+                if (r.success) {
+                    alert('Duplicates cleared for this group.');
+                    scanDuplicates();
+                } else {
+                    alert('Error: ' + r.message);
+                }
+            });
+        }
+
+        function deleteAllDuplicates() {
+            if (!confirm('CRITICAL: This will scan and delete ALL duplicate payroll records across the entire database, keeping only the latest entry for each employee per period. Continue?')) return;
+            $.post('/api/admin/delete-all-duplicates', function(r) {
+                if (r.success) {
+                    alert('All duplicates have been successfully cleared!');
+                    scanDuplicates();
+                } else {
+                    alert('Error: ' + r.message);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "name": "payroll_system",
+  "version": "1.0.0",
+  "description": "A complete web-based Payroll Management System designed for Local Government Units (LGU).",
+  "main": "index.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.6",
+    "ejs": "^5.0.2",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "portfinder": "^1.0.38",
+    "xlsx": "^0.18.5"
+  }
+}
