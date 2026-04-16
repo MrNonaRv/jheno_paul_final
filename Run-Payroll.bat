@@ -28,18 +28,35 @@ exit /b
 :main
 cd /d "%~dp0"
 
-:: Start Node server in the background
-start /B node app.js
+:: Delete old files to prevent reading stale data
+if exist server_port.txt del server_port.txt
+if exist server_pid.txt del server_pid.txt
 
-:: Wait for server to start and write the port/PID files
-timeout /t 3 /nobreak >nul
+:: Start Node server in the background and log output
+start /B node app.js > server_log.txt 2>&1
+
+:: Wait for server to start (up to 10 seconds)
+set /a counter=0
+:waitloop
+if exist server_port.txt goto :server_ready
+timeout /t 1 /nobreak >nul
+set /a counter+=1
+if %counter% lss 10 goto :waitloop
+
+:: If we get here, server failed to start
+echo Set objArgs = WScript.Arguments > "%temp%\msg.vbs"
+echo msgbox objArgs(0), 16, "Payroll System Error" >> "%temp%\msg.vbs"
+cscript //nologo "%temp%\msg.vbs" "The Payroll System failed to start. Please check server_log.txt for details."
+del "%temp%\msg.vbs"
+exit /b
+
+:server_ready
+:: Give it a tiny bit more time to ensure the server is fully listening
+timeout /t 1 /nobreak >nul
 
 :: Read port and PID
-set PORT=3000
-if exist server_port.txt set /p PORT=<server_port.txt
-
-set PID=
-if exist server_pid.txt set /p PID=<server_pid.txt
+set /p PORT=<server_port.txt
+set /p PID=<server_pid.txt
 
 :: Find Chrome or Edge to open as a standalone app window
 set "BROWSER="
